@@ -562,15 +562,20 @@
 
     int libssh2_hash, hashLength;
     switch (hashType) {
-        case NMSSHSessionHashMD5:
-            libssh2_hash = LIBSSH2_HOSTKEY_HASH_MD5;
-            hashLength = 16;
-            break;
-
-        case NMSSHSessionHashSHA1:
-            libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA1;
-            hashLength = 20;
-            break;
+      case NMSSHSessionHashMD5:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_MD5;
+        hashLength = 16;
+        break;
+        
+      case NMSSHSessionHashSHA1:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA1;
+        hashLength = 20;
+        break;
+        
+      case NMSSHSessionHashSHA256:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA256;
+        hashLength = 32;
+        break;
     }
 
     const char *hash = libssh2_hostkey_hash(self.session, libssh2_hash);
@@ -586,6 +591,38 @@
     }
 
     return [fingerprint copy];
+}
+
+- (NSData *)fingerprintData:(NMSSHSessionHash)hashType {
+    if (!self.session) {
+        return nil;
+    }
+    
+    int libssh2_hash, hashLength;
+    switch (hashType) {
+      case NMSSHSessionHashMD5:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_MD5;
+        hashLength = 16;
+        break;
+        
+      case NMSSHSessionHashSHA1:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA1;
+        hashLength = 20;
+        break;
+        
+      case NMSSHSessionHashSHA256:
+        libssh2_hash = LIBSSH2_HOSTKEY_HASH_SHA256;
+        hashLength = 32;
+        break;
+    }
+    
+    const char *hash = libssh2_hostkey_hash(self.session, libssh2_hash);
+    if (!hash) {
+        NMSSHLogWarn(@"Unable to retrive host's fingerprint");
+        return nil;
+    }
+    
+    return [NSData dataWithBytes:hash length:hashLength];
 }
 
 // -----------------------------------------------------------------------------

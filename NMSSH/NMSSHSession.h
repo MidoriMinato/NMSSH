@@ -5,7 +5,8 @@
 
 typedef NS_ENUM(NSInteger, NMSSHSessionHash) {
     NMSSHSessionHashMD5,
-    NMSSHSessionHashSHA1
+    NMSSHSessionHashSHA1,
+    NMSSHSessionHashSHA256
 };
 
 typedef NS_ENUM(NSInteger, NMSSHKnownHostStatus) {
@@ -290,6 +291,7 @@ typedef NS_ENUM(NSInteger, NMSSHKnownHostStatus) {
  @returns The host's fingerprint
  */
 - (nullable NSString *)fingerprint:(NMSSHSessionHash)hashType;
+- (nullable NSData *)fingerprintData:(NMSSHSessionHash)hashType;
 
 /// ----------------------------------------------------------------------------
 /// @name Known hosts

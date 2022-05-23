@@ -1,35 +1,24 @@
-# NMSSH [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
+# NMSSH
 
-NMSSH is a clean, easy-to-use, unit tested framework for iOS and OSX that wraps libssh2.
+This is a forked project from [original NMSSH](https://github.com/NMSSH/NMSSH). Differences are as follows.
 
-## Questions & Issues
-
-If you encounter an issue or have any questions about implementing NMSSH, please post them in [the issue tracker](https://github.com/NMSSH/NMSSH/issues) – we do not offer free support via email.
+* Changed to Swift Package.
+* Libssh2, libssl, libcrypto are removed. You can use [Libssh2Prebuild](https://github.com/MidoriMinato/Libssh2Prebuild) Swift Package to add these libraries.
+* SHA256 fingerprint is added.
 
 ## Installation
 
-### CocoaPods
+Add NMSSH package with Xcode Swift Package Manager. Enter the following URL in the search box.
 
-    pod 'NMSSH'
+`https://github.com/MidoriMinato/NMSSH`
 
-### Carthage
+If your project does not already include libssh2, libssl, libcrypto, add Libssh2Prebuild package from Xcode Swift Package Manager. Enter the following URL in the search box.
 
-    github "NMSSH/NMSSH"
-
-### Build from source
-
-Consult the Wiki for detailed information about how to:
-
-* [Build for OSX](https://github.com/NMSSH/NMSSH/wiki/Build-and-use-in-your-OSX-project) or
-* [Build for iOS](https://github.com/NMSSH/NMSSH/wiki/Build-and-use-in-your-iOS-project).
+`https://github.com/MidoriMinato/Libssh2Prebuild`
 
 ### Include it in your project
 
-Add `#import <NMSSH/NMSSH.h>` to your source file.
-
-### OpenSSL and Libssh2 binaries
-
-NMSSH includes a precompiled version of Libssh2 and OpenSSL compiled with [this script](https://github.com/Frugghi/iSSH2). You can easily recompile the libraries and replace the binaries.
+Add `#import NMSSH` to your source file for Swift code.
 
 ## What does it look like?
 
@@ -53,39 +42,6 @@ BOOL success = [session.channel uploadFile:@"~/index.html" to:@"/var/www/9muses.
 
 [session disconnect];
 ```
-
-## API Documentation
-
-API documentation for NMSSH is available at [http://cocoadocs.org/docsets/NMSSH/](http://cocoadocs.org/docsets/NMSSH/).
-
-## Guidelines for contributions
-
-* Follow the [code conventions](https://github.com/Lejdborg/cocoa-conventions/).
-* Fork NMSSH and create a feature branch. Develop your feature.
-* Open a pull request.
-
-**Note:** Make sure that you have _documented your code_ and that you _follow the code conventions_ before opening a pull request.
-
-## NMSSH is used in
-
-* [iTerm2](https://github.com/gnachman/iTerm2)
-* [DogeWallet](https://github.com/SlayterDev/DogeWallet)
-
-## Developed by
-
-### Core team
-
-* [Christoffer Lejdborg (@Lejdborg)](https://github.com/Lejdborg) (creator)
-* [Tommaso Madonia (@Frugghi)](https://github.com/Frugghi)
-
-### Contributors
-
-* [Sebastian Hunkeler (@lightforce)](https://github.com/lightforce)
-* [Endika Gutiérrez (@endSly)](https://github.com/endSly)
-* [Clemens Gruber (@clemensg)](https://github.com/clemensg)
-* [@gnachman](https://github.com/gnachman)
-* [@Shirk](https://github.com/Shirk)
-* [@touta](https://github.com/touta)
 
 ## License
 

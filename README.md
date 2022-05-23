@@ -18,7 +18,7 @@ If your project does not already include libssh2, libssl, libcrypto, add Libssh2
 
 ### Include it in your project
 
-Add `#import NMSSH` to your source file for Swift code.
+Add `import NMSSH` to your source file for Swift code.
 
 ## What does it look like?
 

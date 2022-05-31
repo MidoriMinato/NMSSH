@@ -293,6 +293,14 @@ typedef NS_ENUM(NSInteger, NMSSHKnownHostStatus) {
 - (nullable NSString *)fingerprint:(NMSSHSessionHash)hashType;
 - (nullable NSData *)fingerprintData:(NMSSHSessionHash)hashType;
 
+/**
+ Get the host key type string of the remote host.
+ The session must be connected to an host.
+
+ @returns The host's host key type string
+*/
+- (nullable NSString*)hostKeyType;
+
 /// ----------------------------------------------------------------------------
 /// @name Known hosts
 /// ----------------------------------------------------------------------------

@@ -625,6 +625,36 @@
     return [NSData dataWithBytes:hash length:hashLength];
 }
 
+- (NSString*)hostKeyType {
+    if (!self.session) {
+        return nil;
+    }
+    
+    int keytype;
+    size_t keylen;
+    const char *remotekey = libssh2_session_hostkey(self.session, &keylen, &keytype);
+    if (!remotekey) {
+        NMSSHLogError(@"Failed to get host key.");
+        return nil;
+    }
+    
+    switch(keytype) {
+      case LIBSSH2_HOSTKEY_TYPE_RSA:
+        return @"RSA";
+      case LIBSSH2_HOSTKEY_TYPE_DSS:
+            return @"DSS";
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
+        return @"ECDSA 256";
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
+        return @"ECDSA 384";
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
+        return @"ECDSA 521";
+      case LIBSSH2_HOSTKEY_TYPE_ED25519:
+        return @"Ed25519";
+    }
+    return nil;
+}
+
 // -----------------------------------------------------------------------------
 #pragma mark - KNOWN HOSTS
 // -----------------------------------------------------------------------------
@@ -711,7 +741,7 @@
         return NMSSHKnownHostStatusFailure;
     }
 
-    int keybit = (keytype == LIBSSH2_HOSTKEY_TYPE_RSA ? LIBSSH2_KNOWNHOST_KEY_SSHRSA : LIBSSH2_KNOWNHOST_KEY_SSHDSS);
+    int keybit = [self knownHostKeybitFromHostKeyType:keytype];
     struct libssh2_knownhost *host;
     NMSSHLogInfo(@"Check for host %@, port %@ in file %@", self.host, self.port, filename);
     int check = libssh2_knownhost_checkp(knownHosts,
@@ -784,12 +814,7 @@
     }
 
     int keybit = LIBSSH2_KNOWNHOST_KEYENC_RAW;
-    if (hktype == LIBSSH2_HOSTKEY_TYPE_RSA) {
-        keybit |= LIBSSH2_KNOWNHOST_KEY_SSHRSA;
-    }
-    else {
-        keybit |= LIBSSH2_KNOWNHOST_KEY_SSHDSS;
-    }
+    keybit |= [self knownHostKeybitFromHostKeyType:hktype];
 
     if (salt) {
         keybit |= LIBSSH2_KNOWNHOST_TYPE_SHA1;
@@ -827,6 +852,31 @@
 
     libssh2_knownhost_free(knownHosts);
     return result == 0;
+}
+
+- (int)knownHostKeybitFromHostKeyType:(int)keytype {
+    int keybit = LIBSSH2_KNOWNHOST_KEY_UNKNOWN;
+    switch(keytype) {
+      case LIBSSH2_HOSTKEY_TYPE_RSA:
+        keybit = LIBSSH2_KNOWNHOST_KEY_SSHRSA;
+        break;
+      case LIBSSH2_HOSTKEY_TYPE_DSS:
+        keybit = LIBSSH2_KNOWNHOST_KEY_SSHDSS;
+        break;
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
+        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_256;
+        break;
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
+        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_384;
+        break;
+      case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
+        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_521;
+        break;
+      case LIBSSH2_HOSTKEY_TYPE_ED25519:
+        keybit = LIBSSH2_KNOWNHOST_KEY_ED25519;
+        break;
+    }
+    return keybit;
 }
 
 - (NSString *)keyboardInteractiveRequest:(NSString *)request {

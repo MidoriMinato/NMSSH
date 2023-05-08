@@ -14,8 +14,9 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "NMSSH"),
-    ],
-    path: "Sources/NMSSH",
-    publicHeadersPath: "include"
+            name: "NMSSH",
+            path: "Sources/NMSSH",
+            publicHeadersPath: "include"
+        ),
+    ]
 )

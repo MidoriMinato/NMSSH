@@ -830,7 +830,7 @@ Update known_host file
     struct libssh2_knownhost *knownhost = nil;
     int check = libssh2_knownhost_checkp(knownHosts,
                 [hostname UTF8String],
-                port,
+                (int)port,
                 hostkey,
                 hostkey_len,
                 typemask,

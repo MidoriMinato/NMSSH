@@ -163,6 +163,9 @@ typedef NS_ENUM(NSInteger, NMSSHKnownHostStatus) {
 /** The remote host banner. */
 @property (nonatomic, nullable, readonly) NSString *remoteBanner;
 
+/** Preferred key exchange method - libssh2_session_method_pref() LIBSSH2_METHOD_HOSTKEY */
+@property (nonatomic, nullable, strong) NSString *methodPref_HostKey;
+
 /// ----------------------------------------------------------------------------
 /// @name Raw libssh2 session and socket reference
 /// ----------------------------------------------------------------------------
@@ -329,21 +332,18 @@ typedef NS_ENUM(NSInteger, NMSSHKnownHostStatus) {
 
     [session addKnownHostName:session.host
                          port:[session.port intValue]
-                       toFile:nil
-                     withSalt:nil];
+                       toFile:nil];
 
  @warning  On Mac OS, the default filename is `~/.ssh/known_hosts`, and will not be writable in a sandboxed environment.
 
  @param hostName The hostname or IP address to add.
  @param port The port number of the host to add.
  @param fileName The path to the known_hosts file, or `nil` for the default.
- @param salt The base64-encoded salt used for hashing. May be `nil`.
  @returns Success status.
  */
-- (BOOL)addKnownHostName:(nonnull NSString *)hostName
-                    port:(NSInteger)port
-                  toFile:(nullable NSString *)fileName
-                withSalt:(nullable NSString *)salt;
+- (BOOL)updateKnownHostName:(nonnull NSString *)hostName
+port:(NSInteger)port
+toFile:(nullable NSString *)fileName;
 
 /// ----------------------------------------------------------------------------
 /// @name Quick channel/sftp access

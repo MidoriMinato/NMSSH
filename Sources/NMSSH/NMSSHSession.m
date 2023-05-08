@@ -51,6 +51,8 @@
         [self setConnected:NO];
         [self setFingerprintHash:NMSSHSessionHashMD5];
     }
+    //Initialize property.
+    self.methodPref_HostKey = nil;
 
     return self;
 }
@@ -291,6 +293,10 @@
 
     // Create a session instance
     [self setSession:libssh2_session_init_ex(NULL, NULL, NULL, (__bridge void *)(self))];
+    // Set preferred key exchange method.
+    if( self.methodPref_HostKey != nil ) {
+        libssh2_session_method_pref(self.session, LIBSSH2_METHOD_HOSTKEY, [self.methodPref_HostKey UTF8String]);
+    }
 
     // Set a callback for disconnection
     libssh2_session_callback_set(self.session, LIBSSH2_CALLBACK_DISCONNECT, &disconnect_callback);
@@ -741,7 +747,7 @@
         return NMSSHKnownHostStatusFailure;
     }
 
-    int keybit = [self knownHostKeybitFromHostKeyType:keytype];
+    int keybit = [self knownhostKeyForHostKeyType:keytype];
     struct libssh2_knownhost *host;
     NMSSHLogInfo(@"Check for host %@, port %@ in file %@", self.host, self.port, filename);
     int check = libssh2_knownhost_checkp(knownHosts,
@@ -776,35 +782,39 @@
     }
 }
 
-- (BOOL)addKnownHostName:(NSString *)host port:(NSInteger)port toFile:(NSString *)fileName withSalt:(NSString *)salt {
-    const char *hostkey;
-    size_t hklen;
-    int hktype;
-    NSString *hostname;  // Formatted as {host} or [{host}]:{port}.
-
-    if (port == 22) {
-        hostname = host;
+/**
+Update known_host file
+- Delete an old entry if it exist and add a new entry into known_host file.
+*/
+- (BOOL)updateKnownHostName:(NSString *)hostname port:(NSInteger)port toFile:(NSString *)fileName {
+    //Get string formatted as {host} or [{host}]:{port}.
+    NSString *hostAndPortString = hostname;
+    if (port != 22) {
+        hostAndPortString = [NSString stringWithFormat:@"[%@]:%d", hostname, (int)port];
     }
-    else {
-        hostname = [NSString stringWithFormat:@"[%@]:%d", host, (int)port];
-    }
-
+    
+    //Get known_hosts filename.
     if (!fileName) {
         fileName = [self userKnownHostsFileName];
     }
-
-    hostkey = libssh2_session_hostkey(self.session, &hklen, &hktype);
+    
+    //Get hostkey of the current session.
+    size_t hostkey_len = 0;
+    int hostkey_type = 0;
+    const char* hostkey = libssh2_session_hostkey(self.session, &hostkey_len, &hostkey_type);
     if (!hostkey) {
         NMSSHLogError(@"Failed to get host key.");
         return NO;
     }
-
+    
+    //Create knownhosts struct.
     LIBSSH2_KNOWNHOSTS *knownHosts = libssh2_knownhost_init(self.session);
     if (!knownHosts) {
         NMSSHLogError(@"Failed to initialize knownhosts.");
         return NO;
     }
-
+    
+    //Read known_hosts file.
     int rc = libssh2_knownhost_readfile(knownHosts, [fileName UTF8String], LIBSSH2_KNOWNHOST_FILE_OPENSSH);
     if (rc < 0 && rc != LIBSSH2_ERROR_FILE) {
         NMSSHLogError(@"Failed to read known hosts file.");
@@ -812,25 +822,32 @@
 
         return NO;
     }
-
-    int keybit = LIBSSH2_KNOWNHOST_KEYENC_RAW;
-    keybit |= [self knownHostKeybitFromHostKeyType:hktype];
-
-    if (salt) {
-        keybit |= LIBSSH2_KNOWNHOST_TYPE_SHA1;
+    
+    //Get typemask for libssh2_knownhost_checkp()/libssh2_knownhost_addc().
+    int typemask = LIBSSH2_KNOWNHOST_TYPE_PLAIN | LIBSSH2_KNOWNHOST_KEYENC_RAW | [self knownhostKeyForHostKeyType:hostkey_type];
+    
+    //Delete an old entry in knownHosts struct.
+    struct libssh2_knownhost *knownhost = nil;
+    int check = libssh2_knownhost_checkp(knownHosts,
+                [hostname UTF8String],
+                port,
+                hostkey,
+                hostkey_len,
+                typemask,
+                &knownhost);
+    if( knownhost != nil ) {
+        libssh2_knownhost_del(knownHosts, knownhost);
     }
-    else {
-        keybit |= LIBSSH2_KNOWNHOST_TYPE_PLAIN;
-    }
-
+    
+    //Add a new entry into knownHosts struct.
     int result = libssh2_knownhost_addc(knownHosts,
-                                        [hostname UTF8String],
-                                        [salt UTF8String],
+                                        [hostAndPortString UTF8String],
+                                        NULL,
                                         hostkey,
-                                        hklen,
+                                        hostkey_len,
                                         NULL,
                                         0,
-                                        keybit,
+                                        typemask,
                                         NULL);
     if (result) {
         NMSSHLogError(@"Failed to add host to known hosts: error %d (%@)",
@@ -854,29 +871,32 @@
     return result == 0;
 }
 
-- (int)knownHostKeybitFromHostKeyType:(int)keytype {
-    int keybit = LIBSSH2_KNOWNHOST_KEY_UNKNOWN;
-    switch(keytype) {
+/**
+Convert LIBSSH2_HOSTKEY_TYPE_XXX to LIBSSH2_KNOWNHOST_KEY_XXX
+*/
+- (int)knownhostKeyForHostKeyType:(int)hostkeytype {
+    int knownhostKey = LIBSSH2_KNOWNHOST_KEY_UNKNOWN;
+    switch(hostkeytype) {
       case LIBSSH2_HOSTKEY_TYPE_RSA:
-        keybit = LIBSSH2_KNOWNHOST_KEY_SSHRSA;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_SSHRSA;
         break;
       case LIBSSH2_HOSTKEY_TYPE_DSS:
-        keybit = LIBSSH2_KNOWNHOST_KEY_SSHDSS;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_SSHDSS;
         break;
       case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
-        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_256;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_ECDSA_256;
         break;
       case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
-        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_384;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_ECDSA_384;
         break;
       case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
-        keybit = LIBSSH2_KNOWNHOST_KEY_ECDSA_521;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_ECDSA_521;
         break;
       case LIBSSH2_HOSTKEY_TYPE_ED25519:
-        keybit = LIBSSH2_KNOWNHOST_KEY_ED25519;
+        knownhostKey = LIBSSH2_KNOWNHOST_KEY_ED25519;
         break;
     }
-    return keybit;
+    return knownhostKey;
 }
 
 - (NSString *)keyboardInteractiveRequest:(NSString *)request {
